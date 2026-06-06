@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Grammatika mavzulari - Grammatika Test{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    .topic-card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.75rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .topic-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.15);
+        border-color: #0d6efd;
+    }
+    .level-badge-boshlangich { background-color: #198754; }
+    .level-badge-orta        { background-color: #fd7e14; }
+    .level-badge-yuqori      { background-color: #dc3545; }
+    .page-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        border-radius: 0.75rem;
+    }
+    .filter-btn.active {
+        background-color: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+    }
+    .q-count-badge {
+        font-size: 0.78rem;
+        background: #e7f0ff;
+        color: #0d6efd;
+        border-radius: 20px;
+        padding: 2px 10px;
+    }
+    .progress-mini { height: 6px; border-radius: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Sarlavha ─────────────────────────────────────────────────────── #}
+<div class="page-header text-white p-4 mb-4 shadow-sm">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h3 class="mb-1">
+                <i class="bi bi-book-half me-2"></i>Grammatika mavzulari
+            </h3>
+            <p class="mb-0 opacity-75">
+                Test topshirish uchun quyidagi mavzulardan birini tanlang.
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('student.dashboard') }}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Bosh panel
+            </a>
+        </div>
+    </div>
+</div>
+
+{# ── Filtr tugmalari ───────────────────────────────────────────────── #}
+<div class="d-flex flex-wrap gap-2 mb-4" id="filterBtns">
+    <button class="btn btn-outline-primary filter-btn active" data-level="all">
+        <i class="bi bi-grid me-1"></i>Barchasi
+        <span class="badge bg-primary ms-1">{{ topics | length }}</span>
+    </button>
+    <button class="btn btn-outline-success filter-btn" data-level="boshlangich">
+        <i class="bi bi-circle-fill me-1 text-success" style="font-size:.6rem;"></i>Boshlang'ich
+    </button>
+    <button class="btn btn-outline-warning filter-btn" data-level="orta">
+        <i class="bi bi-circle-fill me-1 text-warning" style="font-size:.6rem;"></i>O'rta
+    </button>
+    <button class="btn btn-outline-danger filter-btn" data-level="yuqori">
+        <i class="bi bi-circle-fill me-1 text-danger" style="font-size:.6rem;"></i>Yuqori
+    </button>
+</div>
+
+{# ── Mavzular panjara ──────────────────────────────────────────────── #}
+{% if topics %}
+<div class="row g-3" id="topicsGrid">
+    {% for topic in topics %}
+    {% set q_count = topic.questions.filter_by(is_active=True).count() %}
+    {% set user_attempts = user_results.get(topic.id, []) %}
+    {% set attempt_count = user_attempts | length %}
+    {% set best = user_attempts | map(attribute='score_percentage') | list | max if attempt_count > 0 else none %}
+
+    <div class="col-sm-6 col-lg-4 topic-item" data-level="{{ topic.difficulty_level }}">
+        <div class="topic-card p-3 h-100 bg-white d-flex flex-column">
+
+            {# Sarlavha + daraja #}
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="mb-0 fw-semibold me-2">{{ topic.title }}</h6>
+                <span class="badge level-badge-{{ topic.difficulty_level }} text-white text-nowrap rounded-pill px-2">
+                    {% if topic.difficulty_level == 'boshlangich' %}Boshlang'ich
+                    {% elif topic.difficulty_level == 'orta' %}O'rta
+                    {% else %}Yuqori{% endif %}
+                </span>
+            </div>
+
+            {# Tavsif #}
+            {% if topic.description %}
+            <p class="text-muted small mb-2 flex-grow-1">
+                {{ topic.description | truncate(90) }}
+            </p>
+            {% else %}
+            <p class="text-muted small mb-2 flex-grow-1 fst-italic">Tavsif mavjud emas.</p>
+            {% endif %}
+
+            {# Savol soni + urinishlar #}
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+                <span class="q-count-badge">
+                    <i class="bi bi-question-circle me-1"></i>{{ q_count }} ta savol
+                </span>
+                {% if attempt_count > 0 %}
+                <span class="small text-muted">
+                    <i class="bi bi-arrow-repeat me-1"></i>{{ attempt_count }} marta
+                </span>
+                {% endif %}
+            </div>
+
+            {# Eng yuqori natija progress #}
+            {% if best is not none %}
+            <div class="mb-2">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Eng yaxshi natija</span>
+                    <span class="fw-semibold
+                        {% if best >= 90 %}text-success
+                        {% elif best >= 70 %}text-primary
+                        {% elif best >= 50 %}text-warning
+                        {% else %}text-danger{% endif %}">
+                        {{ "%.0f"|format(best) }}%
+                    </span>
+                </div>
+                <div class="progress progress-mini">
+                    <div class="progress-bar
+                        {% if best >= 90 %}bg-success
+                        {% elif best >= 70 %}bg-primary
+                        {% elif best >= 50 %}bg-warning
+                        {% else %}bg-danger{% endif %}"
+                        style="width:{{ best }}%"></div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Harakat tugmasi #}
+            {% if q_count == 0 %}
+            <button class="btn btn-secondary btn-sm w-100 mt-auto" disabled>
+                <i class="bi bi-lock me-1"></i>Savollar yo'q
+            </button>
+            {% else %}
+            <a href="{{ url_for('test.start_test', topic_id=topic.id) }}"
+               class="btn btn-primary btn-sm w-100 mt-auto">
+                {% if attempt_count > 0 %}
+                <i class="bi bi-arrow-repeat me-1"></i>Qayta boshlash
+                {% else %}
+                <i class="bi bi-play-fill me-1"></i>Test boshlash
+                {% endif %}
+            </a>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    Hozircha mavzular mavjud emas. Administrator tez orada qo'shadi.
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const btns  = document.querySelectorAll('.filter-btn');
+    const items = document.querySelectorAll('.topic-item');
+
+    btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const level = btn.dataset.level;
+            items.forEach(item => {
+                item.style.display =
+                    (level === 'all' || item.dataset.level === level) ? '' : 'none';
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environment ───────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Ma'lumotlar bazasi ────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Muhit o'zgaruvchilari — HECH QACHON git ga yuklamang ─────────────
+.env
+
+# ── Flask-Migrate ─────────────────────────────────────────────────────
+migrations/
+
+# ── IDE / Editor ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Log fayllar ───────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Test fayllar ──────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+test.db

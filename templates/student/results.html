@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Test natijalari — {{ topic.title }} | Grammatika Test{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    body { background-color: #f0f4ff; }
+
+    /* ── Natija banner ─────────────────────────────────────── */
+    .result-banner {
+        border-radius: 0.75rem;
+        padding: 2rem;
+        color: #fff;
+        text-align: center;
+    }
+    .result-banner.excellent { background: linear-gradient(135deg,#198754,#157347); }
+    .result-banner.good      { background: linear-gradient(135deg,#0d6efd,#0a58ca); }
+    .result-banner.average   { background: linear-gradient(135deg,#fd7e14,#e85d04); }
+    .result-banner.poor      { background: linear-gradient(135deg,#dc3545,#b02a37); }
+
+    .score-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.2);
+        border: 4px solid rgba(255,255,255,.6);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+    .score-circle .score-pct  { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .score-circle .score-frac { font-size: .85rem; opacity: .85; }
+
+    /* ── Stat cards ────────────────────────────────────────── */
+    .stat-mini {
+        border-radius: .5rem;
+        padding: .75rem 1rem;
+        background: #fff;
+        border-left: 4px solid #0d6efd;
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+
+    /* ── Question review cards ─────────────────────────────── */
+    .review-card {
+        border: none;
+        border-radius: .75rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,.07);
+        overflow: hidden;
+    }
+    .review-card .card-header {
+        padding: .75rem 1.25rem;
+        font-weight: 600;
+    }
+    .review-card.correct .card-header  { background: #d1e7dd; color: #0f5132; }
+    .review-card.incorrect .card-header{ background: #f8d7da; color: #842029; }
+    .review-card.skipped .card-header  { background: #fff3cd; color: #664d03; }
+
+    .option-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border-radius: .4rem;
+        margin-bottom: 4px;
+        background: #f8f9fa;
+    }
+    .option-row.correct-ans  { background: #d1e7dd; }
+    .option-row.student-wrong{ background: #f8d7da; }
+
+    .option-icon { width: 22px; text-align: center; }
+
+    /* ── Explanation box ───────────────────────────────────── */
+    .explanation-box {
+        background: #e7f0ff;
+        border-left: 4px solid #0d6efd;
+        border-radius: 0 .4rem .4rem 0;
+        padding: .75rem 1rem;
+        font-size: .9rem;
+    }
+
+    /* ── Filter tabs ───────────────────────────────────────── */
+    .filter-tab.active {
+        background: #0d6efd !important;
+        color: #fff !important;
+        border-color: #0d6efd !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Natija banneri ───────────────────────────────────────────────── #}
+{% set grade_class =
+    'excellent' if result.score_percentage >= 90 else
+    'good'      if result.score_percentage >= 70 else
+    'average'   if result.score_percentage >= 50 else 'poor' %}
+
+{% set grade_uz =
+    'A\'lo' if result.score_percentage >= 90 else
+    'Yaxshi'  if result.score_percentage >= 70 else
+    'Qoniqarli' if result.score_percentage >= 50 else 'Qoniqarsiz' %}
+
+{% set grade_icon =
+    'bi-trophy-fill'     if result.score_percentage >= 90 else
+    'bi-star-fill'       if result.score_percentage >= 70 else
+    'bi-emoji-neutral'   if result.score_percentage >= 50 else 'bi-emoji-frown' %}
+
+<div class="result-banner {{ grade_class }} mb-4 shadow">
+    <div class="score-circle">
+        <span class="score-pct">{{ "%.0f"|format(result.score_percentage) }}%</span>
+        <span class="score-frac">{{ result.correct_answers }}/{{ result.total_questions }}</span>
+    </div>
+    <h3 class="fw-bold mb-1">
+        <i class="bi {{ grade_icon }} me-2"></i>{{ grade_uz }}!
+    </h3>
+    <p class="mb-0 opacity-90">{{ topic.title }}</p>
+</div>
+
+{# ── Statistika qisqacha ───────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-mini text-center">
+            <div class="fs-4 fw-bold text-success">{{ result.correct_answers }}</div>
+            <div class="small text-muted">To'g'ri javob</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-mini text-center" style="border-color:#dc3545;">
+            <div class="fs-4 fw-bold text-danger">{{ result.total_questions - result.correct_answers }}</div>
+            <div class="small text-muted">Noto'g'ri</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-mini text-center" style="border-color:#198754;">
+            <div class="fs-4 fw-bold text-primary">{{ "%.0f"|format(result.score_percentage) }}%</div>
+            <div class="small text-muted">Umumiy ball</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-mini text-center" style="border-color:#ffc107;">
+            <div class="fs-4 fw-bold text-warning">
+                {% if result.time_taken_seconds %}
+                    {% set m = result.time_taken_seconds // 60 %}
+                    {% set s = result.time_taken_seconds % 60 %}
+                    {{ "%02d:%02d"|format(m, s) }}
+                {% else %}—{% endif %}
+            </div>
+            <div class="small text-muted">Sarflangan vaqt</div>
+        </div>
+    </div>
+</div>
+
+{# ── Harakat tugmalari ─────────────────────────────────────────────── #}
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('test.start_test', topic_id=topic.id) }}"
+       class="btn btn-primary">
+        <i class="bi bi-arrow-repeat me-1"></i>Qayta topshirish
+    </a>
+    <a href="{{ url_for('student.topics') }}" class="btn btn-outline-primary">
+        <i class="bi bi-book me-1"></i>Boshqa mavzu
+    </a>
+    <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-house me-1"></i>Bosh panel
+    </a>
+</div>
+
+{# ── Savol-javob sharhi ───────────────────────────────────────────── #}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h5 class="mb-0 fw-bold text-primary">
+        <i class="bi bi-list-check me-2"></i>Batafsil ko'rish
+    </h5>
+    <div class="d-flex gap-2 flex-wrap" id="filterTabs">
+        <button class="btn btn-sm btn-outline-primary filter-tab active" data-filter="all">
+            Barchasi ({{ review_items|length }})
+        </button>
+        <button class="btn btn-sm btn-outline-success filter-tab" data-filter="correct">
+            <i class="bi bi-check-circle me-1"></i>To'g'ri ({{ review_items|selectattr('is_correct')|list|length }})
+        </button>
+        <button class="btn btn-sm btn-outline-danger filter-tab" data-filter="incorrect">
+            <i class="bi bi-x-circle me-1"></i>Noto'g'ri ({{ review_items|rejectattr('is_correct')|selectattr('answered')|list|length }})
+        </button>
+        <button class="btn btn-sm btn-outline-warning filter-tab" data-filter="skipped">
+            <i class="bi bi-dash-circle me-1"></i>O'tkazilgan ({{ review_items|rejectattr('answered')|list|length }})
+        </button>
+    </div>
+</div>
+
+<div id="reviewList">
+{% for item in review_items %}
+{% set status = 'correct' if item.is_correct else ('skipped' if not item.answered else 'incorrect') %}
+<div class="review-card card mb-3 {{ status }}" data-status="{{ status }}">
+
+    {# Sarlavha #}
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-1">
+        <span>
+            <span class="me-2">{{ loop.index }}.</span>
+            {% if status == 'correct' %}
+                <i class="bi bi-check-circle-fill me-1"></i>To'g'ri
+            {% elif status == 'skipped' %}
+                <i class="bi bi-dash-circle-fill me-1"></i>O'tkazilgan
+            {% else %}
+                <i class="bi bi-x-circle-fill me-1"></i>Noto'g'ri
+            {% endif %}
+        </span>
+        <span class="badge
+            {% if status == 'correct' %}bg-success
+            {% elif status == 'skipped' %}bg-warning text-dark
+            {% else %}bg-danger{% endif %} rounded-pill">
+            {% if status == 'correct' %}+1 ball{% elif status == 'skipped' %}0 ball{% else %}0 ball{% endif %}
+        </span>
+    </div>
+
+    <div class="card-body">
+        {# Savol matni #}
+        <p class="fw-semibold mb-3">{{ item.question_text }}</p>
+
+        {# Variantlar #}
+        <div class="mb-3">
+        {% for letter, text in item.options %}
+            {% set is_correct_opt  = (letter == item.correct_option) %}
+            {% set is_student_opt  = (letter == item.student_answer) %}
+            {% set row_class =
+                'correct-ans'   if is_correct_opt else
+                ('student-wrong' if (is_student_opt and not is_correct_opt) else '') %}
+            <div class="option-row {{ row_class }}">
+                <span class="option-icon">
+                    {% if is_correct_opt %}
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                    {% elif is_student_opt and not is_correct_opt %}
+                        <i class="bi bi-x-circle-fill text-danger"></i>
+                    {% else %}
+                        <i class="bi bi-circle text-secondary"></i>
+                    {% endif %}
+                </span>
+                <span class="fw-semibold me-1">{{ letter }}.</span>
+                <span>{{ text }}</span>
+                {% if is_correct_opt %}
+                    <span class="ms-auto badge bg-success rounded-pill">To'g'ri javob</span>
+                {% elif is_student_opt %}
+                    <span class="ms-auto badge bg-danger rounded-pill">Sizning javobingiz</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+        </div>
+
+        {# Tushuntirish #}
+        {% if item.explanation %}
+        <div class="explanation-box">
+            <strong><i class="bi bi-lightbulb-fill me-1 text-primary"></i>Tushuntirish:</strong>
+            {{ item.explanation }}
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endfor %}
+</div>
+
+{# Yuqoriga qaytish #}
+<div class="text-center mt-4 mb-5">
+    <a href="#" class="btn btn-outline-secondary btn-sm" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+        <i class="bi bi-arrow-up me-1"></i>Yuqoriga qaytish
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Filtr ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const filter = tab.dataset.filter;
+        document.querySelectorAll('#reviewList .review-card').forEach(card => {
+            card.style.display =
+                (filter === 'all' || card.dataset.status === filter) ? '' : 'none';
+        });
+    });
+});
+</script>
+{% endblock %}

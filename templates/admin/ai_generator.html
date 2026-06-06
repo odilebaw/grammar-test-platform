@@ -1,0 +1,650 @@
+{% extends "base.html" %}
+
+{% block title %}AI Savol Generatori — Admin | Grammatika Test{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    body { background-color: #f0f4ff; }
+
+    /* ── Page header ─────────────────────────────────────────── */
+    .page-header {
+        background: linear-gradient(135deg, #6610f2 0%, #0d6efd 100%);
+        border-radius: 0.75rem;
+    }
+
+    /* ── Form card ───────────────────────────────────────────── */
+    .form-card {
+        border: none;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    /* ── Question type toggle cards ──────────────────────────── */
+    .qtype-option { display: none; }
+    .qtype-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 18px 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 0.65rem;
+        cursor: pointer;
+        transition: border-color .18s, background .18s, transform .18s;
+        background: #fff;
+        text-align: center;
+        min-height: 100px;
+        user-select: none;
+    }
+    .qtype-label:hover {
+        border-color: #6610f2;
+        background: #f5f0ff;
+        transform: translateY(-2px);
+    }
+    .qtype-label .qtype-icon {
+        font-size: 1.8rem;
+        color: #6610f2;
+    }
+    .qtype-label .qtype-name {
+        font-weight: 600;
+        font-size: .9rem;
+        color: #212529;
+    }
+    .qtype-label .qtype-desc {
+        font-size: .75rem;
+        color: #6c757d;
+    }
+    .qtype-option:checked + .qtype-label {
+        border-color: #6610f2;
+        background: #ede9ff;
+        box-shadow: 0 0 0 3px rgba(102,16,242,0.15);
+    }
+    .qtype-option:checked + .qtype-label .qtype-name {
+        color: #6610f2;
+    }
+
+    /* ── Count presets ───────────────────────────────────────── */
+    .count-preset {
+        cursor: pointer;
+        transition: all .15s;
+    }
+    .count-preset:hover {
+        background: #6610f2 !important;
+        color: #fff !important;
+        border-color: #6610f2 !important;
+    }
+    .count-preset.active {
+        background: #6610f2 !important;
+        color: #fff !important;
+        border-color: #6610f2 !important;
+    }
+
+    /* ── Loading overlay ─────────────────────────────────────── */
+    #loadingOverlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(13,0,50,0.6);
+        z-index: 9999;
+        backdrop-filter: blur(3px);
+    }
+    #loadingOverlay .inner {
+        background: #fff;
+        border-radius: 1rem;
+        padding: 2.5rem 3rem;
+        text-align: center;
+        max-width: 380px;
+        width: 90%;
+    }
+    .ai-spinner {
+        width: 72px;
+        height: 72px;
+        border: 6px solid #ede9ff;
+        border-top-color: #6610f2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1.2rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-dots::after {
+        content: '';
+        animation: dots 1.4s steps(4, end) infinite;
+    }
+    @keyframes dots {
+        0%  { content: ''; }
+        25% { content: '.'; }
+        50% { content: '..'; }
+        75% { content: '...'; }
+    }
+
+    /* ── Result panel ────────────────────────────────────────── */
+    #resultPanel { display: none; }
+    .result-success {
+        background: linear-gradient(135deg,#198754,#157347);
+        border-radius: .75rem;
+        color: #fff;
+        padding: 1.5rem 2rem;
+    }
+    .result-error {
+        background: linear-gradient(135deg,#dc3545,#b02a37);
+        border-radius: .75rem;
+        color: #fff;
+        padding: 1.5rem 2rem;
+    }
+
+    /* ── History table ───────────────────────────────────────── */
+    .history-table thead { background: #6610f2; color: #fff; }
+    .history-table tbody tr:hover { background: #f5f0ff; }
+
+    /* ── API key notice ──────────────────────────────────────── */
+    .api-notice {
+        background: #fff8e1;
+        border-left: 4px solid #ffc107;
+        border-radius: 0 .5rem .5rem 0;
+        padding: .75rem 1rem;
+        font-size: .875rem;
+    }
+
+    /* ── Section titles ──────────────────────────────────────── */
+    .section-title {
+        color: #6610f2;
+        border-bottom: 3px solid #6610f2;
+        padding-bottom: .35rem;
+        margin-bottom: 1.2rem;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Sahifa sarlavhasi ─────────────────────────────────────────────── #}
+<div class="page-header text-white p-4 mb-4 shadow">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h3 class="mb-1">
+                <i class="bi bi-robot me-2"></i>AI Savol Generatori
+            </h3>
+            <p class="mb-0 opacity-80">
+                Gemini AI yordamida avtomatik grammatika savollari yarating.
+                Model: <strong>gemini-1.5-flash</strong> (bepul tarif)
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Admin paneli
+            </a>
+        </div>
+    </div>
+</div>
+
+{# ── API kalit eslatmasi ───────────────────────────────────────────── #}
+<div class="api-notice mb-4">
+    <i class="bi bi-key-fill text-warning me-2"></i>
+    <strong>Gemini API kaliti kerak:</strong>
+    PythonAnywhere → Web sahifasi → <em>Environment variables</em> bo'limida
+    <code>GEMINI_API_KEY</code> o'zgaruvchisini sozlang.
+    Bepul kalit: <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                    rel="noopener">aistudio.google.com</a>
+</div>
+
+<div class="row g-4">
+
+    {# ════════════════════════════════════════════════════════════════
+       Chap ustun — Generatsiya formasi
+    ════════════════════════════════════════════════════════════════ #}
+    <div class="col-lg-7">
+        <div class="card form-card">
+            <div class="card-body p-4">
+
+                <h5 class="section-title">
+                    <i class="bi bi-sliders me-2"></i>Generatsiya sozlamalari
+                </h5>
+
+                <form id="genForm" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    {# ── 1. Mavzu tanlash ──────────────────────── #}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-book me-1 text-primary"></i>
+                            1. Grammatika mavzusi
+                        </label>
+
+                        {# Mavjud mavzu #}
+                        <div class="mb-2">
+                            <label class="small text-muted mb-1">Mavjud mavzulardan tanlash:</label>
+                            <select class="form-select" id="topicSelect" name="topic_id">
+                                <option value="">— Mavzu tanlang —</option>
+                                {% for t in topics %}
+                                <option value="{{ t.id }}">{{ t.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="text-center text-muted small my-2">— yoki —</div>
+
+                        {# Yangi mavzu #}
+                        <div>
+                            <label class="small text-muted mb-1">Yangi mavzu nomini kiriting:</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="topicNameInput"
+                                   name="topic_name"
+                                   placeholder="Masalan: Present Perfect, Passive Voice, Conditionals...">
+                            <div class="form-text">
+                                Yangi mavzu avtomatik yaratiladi va savollar unga biriktiriladi.
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ── 2. Savol turi ─────────────────────────── #}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-list-check me-1 text-primary"></i>
+                            2. Savol turi (bir yoki bir nechtasini tanlang)
+                        </label>
+                        <div class="row g-2">
+
+                            <div class="col-4">
+                                <input type="checkbox"
+                                       class="qtype-option"
+                                       id="qt_mcq"
+                                       name="question_types"
+                                       value="multiple_choice"
+                                       checked>
+                                <label class="qtype-label w-100" for="qt_mcq">
+                                    <span class="qtype-icon"><i class="bi bi-ui-radios"></i></span>
+                                    <span class="qtype-name">Ko'p tanlov</span>
+                                    <span class="qtype-desc">4 variant, 1 to'g'ri</span>
+                                </label>
+                            </div>
+
+                            <div class="col-4">
+                                <input type="checkbox"
+                                       class="qtype-option"
+                                       id="qt_fill"
+                                       name="question_types"
+                                       value="fill_blank">
+                                <label class="qtype-label w-100" for="qt_fill">
+                                    <span class="qtype-icon"><i class="bi bi-input-cursor-text"></i></span>
+                                    <span class="qtype-name">Bo'sh to'ldirish</span>
+                                    <span class="qtype-desc">___ bilan savol</span>
+                                </label>
+                            </div>
+
+                            <div class="col-4">
+                                <input type="checkbox"
+                                       class="qtype-option"
+                                       id="qt_tf"
+                                       name="question_types"
+                                       value="true_false">
+                                <label class="qtype-label w-100" for="qt_tf">
+                                    <span class="qtype-icon"><i class="bi bi-toggle-on"></i></span>
+                                    <span class="qtype-name">To'g'ri / Noto'g'ri</span>
+                                    <span class="qtype-desc">True / False</span>
+                                </label>
+                            </div>
+
+                        </div>
+                        <div id="qtypeError" class="text-danger small mt-1 d-none">
+                            <i class="bi bi-exclamation-circle me-1"></i>
+                            Kamida bitta savol turini tanlang.
+                        </div>
+                    </div>
+
+                    {# ── 3. Savollar soni ──────────────────────── #}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-hash me-1 text-primary"></i>
+                            3. Savollar soni
+                        </label>
+
+                        {# Tezkor tanlov #}
+                        <div class="d-flex flex-wrap gap-2 mb-2" id="countPresets">
+                            {% for n in [10, 20, 30, 50, 100] %}
+                            <span class="badge border border-primary text-primary count-preset px-3 py-2 fs-6"
+                                  data-val="{{ n }}">{{ n }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <input type="number"
+                               class="form-control"
+                               id="questionCount"
+                               name="question_count"
+                               value="20"
+                               min="1"
+                               max="200"
+                               required>
+                        <div class="form-text">
+                            Min: 1 · Max: 200 · Free tarif: 15 so'rov/daqiqa
+                        </div>
+                    </div>
+
+                    {# ── Topshirish tugmasi ─────────────────────── #}
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-lg fw-semibold"
+                                id="generateBtn"
+                                style="background:linear-gradient(135deg,#6610f2,#0d6efd);
+                                       color:#fff; border:none; border-radius:.6rem;
+                                       padding:.8rem;">
+                            <i class="bi bi-stars me-2"></i>AI bilan savollar yaratish
+                        </button>
+                    </div>
+
+                </form>
+
+                {# ── Natija paneli ──────────────────────────────── #}
+                <div id="resultPanel" class="mt-4">
+                    <div id="resultSuccess" class="result-success d-none">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-check-circle-fill fs-2"></i>
+                            <div>
+                                <div class="fw-bold fs-5" id="resultTitle">Muvaffaqiyat!</div>
+                                <div id="resultMsg" class="opacity-90"></div>
+                            </div>
+                        </div>
+                        <div id="resultErrors" class="mt-2 small opacity-80"></div>
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
+                            <a href="{{ url_for('admin.questions') }}"
+                               class="btn btn-light btn-sm fw-semibold">
+                                <i class="bi bi-eye me-1"></i>Savollarni ko'rish
+                            </a>
+                            <button class="btn btn-outline-light btn-sm"
+                                    onclick="resetForm()">
+                                <i class="bi bi-arrow-repeat me-1"></i>Qayta yaratish
+                            </button>
+                        </div>
+                    </div>
+                    <div id="resultError" class="result-error d-none">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-x-circle-fill fs-2"></i>
+                            <div>
+                                <div class="fw-bold fs-5">Xatolik yuz berdi</div>
+                                <div id="resultErrMsg" class="opacity-90"></div>
+                            </div>
+                        </div>
+                        <div id="resultErrDetails" class="mt-2 small opacity-80"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {# ════════════════════════════════════════════════════════════════
+       O'ng ustun — Ma'lumot + Statistika
+    ════════════════════════════════════════════════════════════════ #}
+    <div class="col-lg-5">
+
+        {# ── Qanday ishlaydi ──────────────────────────────────── #}
+        <div class="card form-card mb-4">
+            <div class="card-body p-4">
+                <h5 class="section-title">
+                    <i class="bi bi-info-circle me-2"></i>Qanday ishlaydi?
+                </h5>
+                <ol class="ps-3 mb-0" style="line-height:2.1;">
+                    <li>Grammatika mavzusini tanlang yoki kiriting</li>
+                    <li>Savol tur(lar)ini belgilang</li>
+                    <li>Kerakli savollar sonini kiriting</li>
+                    <li><strong>Yaratish</strong> tugmasini bosing</li>
+                    <li>Gemini AI savollarni inglizcha, izohlarni o'zbekcha yaratadi</li>
+                    <li>Barcha savollar avtomatik bazaga saqlanadi ✅</li>
+                </ol>
+            </div>
+        </div>
+
+        {# ── Mavjud statistika ─────────────────────────────────── #}
+        <div class="card form-card mb-4">
+            <div class="card-body p-4">
+                <h5 class="section-title">
+                    <i class="bi bi-bar-chart me-2"></i>Mavjud savollar
+                </h5>
+                {% if topics %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover history-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Mavzu</th>
+                                <th class="text-end">Savollar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in topics %}
+                            {% set qcount = t.questions.filter_by(is_active=True).count() %}
+                            <tr>
+                                <td class="small">{{ t.title }}</td>
+                                <td class="text-end">
+                                    <span class="badge bg-primary rounded-pill">{{ qcount }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Hali mavzular mavjud emas.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Free tarif cheklovlari ────────────────────────────── #}
+        <div class="card form-card border-warning">
+            <div class="card-body p-4">
+                <h5 class="section-title" style="color:#fd7e14;border-color:#fd7e14;">
+                    <i class="bi bi-lightning-charge me-2"></i>Free tarif limitleri
+                </h5>
+                <ul class="list-unstyled mb-0 small">
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <strong>15</strong> so'rov / daqiqa
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <strong>1 million</strong> token / kun
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <strong>gemini-1.5-flash</strong> modeli
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                        Har bir so'rovda max <strong>20</strong> savol
+                    </li>
+                    <li>
+                        <i class="bi bi-clock-fill text-warning me-2"></i>
+                        Katta so'rovlar (~100 ta) bir necha daqiqa olishi mumkin
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{# ── Yuklanmoqda overlaysi ─────────────────────────────────────────── #}
+<div id="loadingOverlay">
+    <div class="d-flex align-items-center justify-content-center h-100">
+        <div class="inner shadow-lg">
+            <div class="ai-spinner"></div>
+            <h5 class="fw-bold mb-2" style="color:#6610f2;">
+                <i class="bi bi-stars me-2"></i>AI ishlayapti<span class="loading-dots"></span>
+            </h5>
+            <p class="text-muted mb-3" id="loadingStatus">
+                Gemini savollarni yaratyapti...
+            </p>
+            <div class="progress" style="height:6px;border-radius:6px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                     style="width:100%;background:linear-gradient(90deg,#6610f2,#0d6efd);">
+                </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0">
+                <i class="bi bi-clock me-1"></i>
+                Ko'p sonli savollar bir necha daqiqa olishi mumkin.
+            </p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Yordamchi: elementlar ──────────────────────────────────────────────
+const genForm       = document.getElementById('genForm');
+const generateBtn   = document.getElementById('generateBtn');
+const loadingOverlay= document.getElementById('loadingOverlay');
+const resultPanel   = document.getElementById('resultPanel');
+const resultSuccess = document.getElementById('resultSuccess');
+const resultError   = document.getElementById('resultError');
+const topicSelect   = document.getElementById('topicSelect');
+const topicNameInput= document.getElementById('topicNameInput');
+const countInput    = document.getElementById('questionCount');
+
+// ── Soni presetlari ───────────────────────────────────────────────────
+document.querySelectorAll('.count-preset').forEach(badge => {
+    badge.addEventListener('click', () => {
+        document.querySelectorAll('.count-preset').forEach(b => b.classList.remove('active'));
+        badge.classList.add('active');
+        countInput.value = badge.dataset.val;
+    });
+});
+
+// Raqam maydoniga yozilsa presetni olib tashlash
+countInput.addEventListener('input', () => {
+    document.querySelectorAll('.count-preset').forEach(b => b.classList.remove('active'));
+});
+
+// ── Mavzu tanlash: biri tanlananda ikkinchisi tozalanadi ──────────────
+topicSelect.addEventListener('change', () => {
+    if (topicSelect.value) topicNameInput.value = '';
+});
+topicNameInput.addEventListener('input', () => {
+    if (topicNameInput.value.trim()) topicSelect.value = '';
+});
+
+// ── Formni yuborish ───────────────────────────────────────────────────
+genForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Validatsiya: kamida 1 savol turi
+    const selectedTypes = [...document.querySelectorAll('input.qtype-option:checked')];
+    const qtypeError    = document.getElementById('qtypeError');
+    if (!selectedTypes.length) {
+        qtypeError.classList.remove('d-none');
+        return;
+    }
+    qtypeError.classList.add('d-none');
+
+    // Validatsiya: mavzu
+    if (!topicSelect.value && !topicNameInput.value.trim()) {
+        topicNameInput.classList.add('is-invalid');
+        topicNameInput.focus();
+        return;
+    }
+    topicNameInput.classList.remove('is-invalid');
+
+    // Validatsiya: son
+    const count = parseInt(countInput.value);
+    if (isNaN(count) || count < 1 || count > 200) {
+        countInput.classList.add('is-invalid');
+        countInput.focus();
+        return;
+    }
+    countInput.classList.remove('is-invalid');
+
+    // Yuklanmoqda
+    showLoading(true);
+    hideResults();
+
+    // FormData yasash
+    const fd = new FormData(genForm);
+
+    // AJAX so'rov
+    try {
+        const resp = await fetch('{{ url_for("ai.generate") }}', {
+            method:  'POST',
+            body:    fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+
+        const data = await resp.json();
+        showLoading(false);
+
+        if (data.success) {
+            showSuccess(data);
+        } else {
+            showErrorResult(data);
+        }
+    } catch (err) {
+        showLoading(false);
+        showErrorResult({
+            message: 'Tarmoq xatosi yuz berdi. Sahifani yangilab qayta urinib ko\'ring.',
+            errors:  [err.toString()],
+        });
+    }
+});
+
+// ── UI yordamchi funksiyalar ──────────────────────────────────────────
+function showLoading(on) {
+    loadingOverlay.style.display = on ? 'block' : 'none';
+    generateBtn.disabled = on;
+}
+
+function hideResults() {
+    resultPanel.style.display   = 'none';
+    resultSuccess.classList.add('d-none');
+    resultError.classList.add('d-none');
+}
+
+function showSuccess(data) {
+    resultPanel.style.display = 'block';
+    resultSuccess.classList.remove('d-none');
+    resultError.classList.add('d-none');
+
+    document.getElementById('resultTitle').textContent =
+        `✅ ${data.saved} ta savol saqlandi!`;
+    document.getElementById('resultMsg').textContent = data.message || '';
+
+    const errDiv = document.getElementById('resultErrors');
+    if (data.errors && data.errors.length) {
+        errDiv.innerHTML = '<strong>Ogohlantirishlar:</strong><ul class="mb-0 mt-1">' +
+            data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+    } else {
+        errDiv.innerHTML = '';
+    }
+
+    resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showErrorResult(data) {
+    resultPanel.style.display = 'block';
+    resultError.classList.remove('d-none');
+    resultSuccess.classList.add('d-none');
+
+    document.getElementById('resultErrMsg').textContent = data.message || 'Noma\'lum xatolik.';
+    const detailsDiv = document.getElementById('resultErrDetails');
+    if (data.errors && data.errors.length) {
+        detailsDiv.innerHTML = '<ul class="mb-0 mt-1">' +
+            data.errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+    } else {
+        detailsDiv.innerHTML = '';
+    }
+
+    resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetForm() {
+    hideResults();
+    genForm.reset();
+    document.querySelectorAll('.count-preset').forEach(b => b.classList.remove('active'));
+    document.getElementById('qt_mcq').checked = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}O'quvchi paneli - Grammatika Test{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-left: 4px solid #0d6efd;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(13, 110, 253, 0.15);
+    }
+    .topic-card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .topic-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        border-color: #0d6efd;
+    }
+    .badge-boshlangich  { background-color: #198754; }
+    .badge-orta         { background-color: #ffc107; color: #212529; }
+    .badge-yuqori       { background-color: #dc3545; }
+    .progress-bar-score { border-radius: 10px; }
+    .score-excellent    { background-color: #198754; }
+    .score-good         { background-color: #0d6efd; }
+    .score-average      { background-color: #ffc107; }
+    .score-poor         { background-color: #dc3545; }
+    .welcome-banner {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        border-radius: 0.75rem;
+    }
+    .results-table thead {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+    .section-title {
+        border-bottom: 3px solid #0d6efd;
+        padding-bottom: 0.4rem;
+        margin-bottom: 1.25rem;
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Xush kelibsiz banneri ─────────────────────────────────────────── #}
+<div class="welcome-banner text-white p-4 mb-4 shadow-sm">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h3 class="mb-1">
+                <i class="bi bi-person-circle me-2"></i>
+                Xush kelibsiz,
+                {% if current_user.first_name %}
+                    {{ current_user.first_name }}
+                    {% if current_user.last_name %} {{ current_user.last_name }}{% endif %}
+                {% else %}
+                    {{ current_user.username }}
+                {% endif %}!
+            </h3>
+            <p class="mb-0 opacity-75">Bugun yangi grammatika mavzularini mashq qiling.</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <span class="badge bg-white text-primary fs-6 px-3 py-2">
+                <i class="bi bi-calendar3 me-1"></i>
+                {{ now.strftime('%d.%m.%Y') }}
+            </span>
+        </div>
+    </div>
+</div>
+
+{# ── Statistika kartochalari ───────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-6 text-primary fw-bold">{{ total_tests }}</div>
+                <div class="text-muted small mt-1">Jami testlar</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-6 text-success fw-bold">
+                    {% if avg_score is not none %}{{ "%.0f"|format(avg_score) }}%{% else %}—{% endif %}
+                </div>
+                <div class="text-muted small mt-1">O'rtacha ball</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-6 text-warning fw-bold">
+                    {% if best_score is not none %}{{ "%.0f"|format(best_score) }}%{% else %}—{% endif %}
+                </div>
+                <div class="text-muted small mt-1">Eng yuqori ball</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <div class="display-6 text-info fw-bold">{{ topics_count }}</div>
+                <div class="text-muted small mt-1">Mavzular soni</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    {# ── Mavzular ro'yxati ─────────────────────────────────────────── #}
+    <div class="col-lg-7">
+        <h5 class="section-title">
+            <i class="bi bi-book me-2"></i>Mavjud grammatika mavzulari
+        </h5>
+        {% if topics %}
+            <div class="row g-3">
+                {% for topic in topics %}
+                <div class="col-sm-6">
+                    <div class="topic-card p-3 h-100 bg-white">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0 fw-semibold">{{ topic.title }}</h6>
+                            <span class="badge badge-{{ topic.difficulty_level }} rounded-pill ms-2 text-nowrap">
+                                {% if topic.difficulty_level == 'boshlangich' %}Boshlang'ich
+                                {% elif topic.difficulty_level == 'orta' %}O'rta
+                                {% else %}Yuqori{% endif %}
+                            </span>
+                        </div>
+                        {% if topic.description %}
+                        <p class="text-muted small mb-2">
+                            {{ topic.description | truncate(80) }}
+                        </p>
+                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <small class="text-muted">
+                                <i class="bi bi-question-circle me-1"></i>
+                                {{ topic.questions.filter_by(is_active=True).count() }} ta savol
+                            </small>
+                            <a href="{{ url_for('student.take_test', topic_id=topic.id) }}"
+                               class="btn btn-primary btn-sm px-3">
+                                Test boshlash
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Hozircha mavzular mavjud emas. Administrator tez orada qo'shadi.
+            </div>
+        {% endif %}
+    </div>
+
+    {# ── O'tgan testlar ────────────────────────────────────────────── #}
+    <div class="col-lg-5">
+        <h5 class="section-title">
+            <i class="bi bi-clock-history me-2"></i>So'nggi natijalar
+        </h5>
+        {% if recent_results %}
+            <div class="list-group shadow-sm">
+                {% for result in recent_results %}
+                {% set score = result.score_percentage %}
+                <div class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold small">{{ result.topic.title }}</span>
+                        <span class="badge
+                            {% if score >= 90 %}bg-success
+                            {% elif score >= 70 %}bg-primary
+                            {% elif score >= 50 %}bg-warning text-dark
+                            {% else %}bg-danger{% endif %}
+                            rounded-pill">
+                            {{ "%.0f"|format(score) }}%
+                        </span>
+                    </div>
+                    <div class="progress mb-1" style="height:6px;">
+                        <div class="progress-bar progress-bar-score
+                            {% if score >= 90 %}score-excellent
+                            {% elif score >= 70 %}score-good
+                            {% elif score >= 50 %}score-average
+                            {% else %}score-poor{% endif %}"
+                            role="progressbar"
+                            style="width: {{ score }}%"
+                            aria-valuenow="{{ score }}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">
+                            <i class="bi bi-check-circle me-1 text-success"></i>
+                            {{ result.correct_answers }}/{{ result.total_questions }} to'g'ri
+                        </small>
+                        <small class="text-muted">
+                            {{ result.completed_at.strftime('%d.%m.%Y') }}
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-end mt-2">
+                <a href="{{ url_for('student.all_results') }}" class="btn btn-outline-primary btn-sm">
+                    Barcha natijalar <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        {% else %}
+            <div class="alert alert-light border">
+                <i class="bi bi-bar-chart me-2 text-primary"></i>
+                Siz hali hech qanday test topshirmagansiz.
+                <br><small class="text-muted">Boshlash uchun chap tomondagi mavzulardan birini tanlang.</small>
+            </div>
+        {% endif %}
+
+        {# ── Progress diagramma ──────────────────────────────────── #}
+        {% if topic_stats %}
+        <h5 class="section-title mt-4">
+            <i class="bi bi-bar-chart-line me-2"></i>Mavzu bo'yicha progress
+        </h5>
+        {% for stat in topic_stats %}
+        <div class="mb-2">
+            <div class="d-flex justify-content-between small mb-1">
+                <span>{{ stat.title }}</span>
+                <span class="fw-semibold">{{ "%.0f"|format(stat.avg_score) }}%</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar
+                    {% if stat.avg_score >= 90 %}bg-success
+                    {% elif stat.avg_score >= 70 %}bg-primary
+                    {% elif stat.avg_score >= 50 %}bg-warning
+                    {% else %}bg-danger{% endif %}"
+                    role="progressbar"
+                    style="width: {{ stat.avg_score }}%; border-radius: 10px;"
+                    aria-valuenow="{{ stat.avg_score }}" aria-valuemin="0" aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+{% endblock %}

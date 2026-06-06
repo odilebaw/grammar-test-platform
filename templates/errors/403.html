@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}403 — Ruxsat yo'q | Grammatika Test{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <div class="display-1 fw-bold text-warning mb-3">403</div>
+    <h2 class="fw-bold mb-2">Ruxsat yo'q</h2>
+    <p class="text-muted mb-4">Bu sahifaga kirish huquqingiz mavjud emas.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">
+        <i class="bi bi-house me-2"></i>Bosh sahifaga qaytish
+    </a>
+</div>
+{% endblock %}

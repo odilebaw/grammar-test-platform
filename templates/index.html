@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Grammatika Test — Ingliz tili grammatikasini o'rganish{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    .hero {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 60%, #084298 100%);
+        border-radius: .75rem;
+        padding: 4rem 2rem;
+    }
+    .feature-card {
+        border: 1px solid #e9ecef;
+        border-radius: .75rem;
+        transition: transform .2s, box-shadow .2s, border-color .2s;
+    }
+    .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(13,110,253,.12);
+        border-color: #0d6efd;
+    }
+    .feature-icon {
+        width: 56px; height: 56px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem; margin: 0 auto 1rem;
+    }
+    .stat-number { font-size: 2rem; font-weight: 800; color: #0d6efd; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Qahramon qismi ───────────────────────────────────────────────── #}
+<div class="hero text-white text-center mb-5 shadow">
+    <h1 class="display-5 fw-bold mb-3">
+        <i class="bi bi-mortarboard-fill me-2"></i>
+        Grammatika Test Platform
+    </h1>
+    <p class="fs-5 mb-4 opacity-90">
+        Ingliz tili grammatikasini mashq qiling, testlar toping va bilimingizni tekshiring.
+        <br class="d-none d-md-block">
+        AI yordamida yaratilgan savollar • Batafsil natijalar • Shaxsiy progress
+    </p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+        <a href="{{ url_for('auth.register') }}"
+           class="btn btn-light btn-lg fw-semibold px-4">
+            <i class="bi bi-person-plus me-2"></i>Ro'yxatdan o'tish — Bepul
+        </a>
+        <a href="{{ url_for('auth.login') }}"
+           class="btn btn-outline-light btn-lg px-4">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Kirish
+        </a>
+    </div>
+</div>
+
+{# ── Xususiyatlar ─────────────────────────────────────────────────── #}
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="feature-card p-4 text-center h-100 bg-white">
+            <div class="feature-icon bg-primary bg-opacity-10">
+                <i class="bi bi-book-fill text-primary"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Ko'p mavzular</h5>
+            <p class="text-muted mb-0">
+                Present Simple, Passive Voice, Conditionals va boshqa muhim
+                grammatika mavzulari bo'yicha testlar.
+            </p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card p-4 text-center h-100 bg-white">
+            <div class="feature-icon bg-success bg-opacity-10">
+                <i class="bi bi-robot text-success"></i>
+            </div>
+            <h5 class="fw-bold mb-2">AI Savol Generatori</h5>
+            <p class="text-muted mb-0">
+                Google Gemini AI yordamida har safar yangi, turli xil savollar
+                avtomatik yaratiladi. Izohlar o'zbek tilida.
+            </p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card p-4 text-center h-100 bg-white">
+            <div class="feature-icon bg-warning bg-opacity-10">
+                <i class="bi bi-bar-chart-fill text-warning"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Batafsil statistika</h5>
+            <p class="text-muted mb-0">
+                Har bir testdan so'ng batafsil natija, to'g'ri/noto'g'ri javoblar
+                va shaxsiy progress grafigi.
+            </p>
+        </div>
+    </div>
+</div>
+
+{# ── Qanday ishlaydi ──────────────────────────────────────────────── #}
+<div class="card border-0 bg-light rounded-3 p-4 mb-5">
+    <h4 class="text-center fw-bold mb-4">
+        <i class="bi bi-list-ol me-2 text-primary"></i>Qanday ishlaydi?
+    </h4>
+    <div class="row g-3 text-center">
+        {% for step in [
+            ('1', 'bi-person-plus', 'Ro\'yxatdan o\'ting', 'Bepul hisob yarating'),
+            ('2', 'bi-book', 'Mavzu tanlang', 'Grammatika mavzularidan birini tanlang'),
+            ('3', 'bi-pencil-square', 'Test toping', '20 ta savol, 20 daqiqa vaqt'),
+            ('4', 'bi-trophy', 'Natijangizni ko\'ring', 'Ball, baho va tushuntirish'),
+        ] %}
+        <div class="col-6 col-md-3">
+            <div class="bg-white rounded-3 p-3 h-100 shadow-sm">
+                <div class="stat-number">{{ step[0] }}</div>
+                <i class="bi {{ step[1] }} fs-3 text-primary d-block my-1"></i>
+                <div class="fw-semibold">{{ step[2] }}</div>
+                <small class="text-muted">{{ step[3] }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{# ── CTA ──────────────────────────────────────────────────────────── #}
+<div class="text-center mb-4">
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-5 shadow-sm">
+        <i class="bi bi-rocket-takeoff me-2"></i>Hoziroq boshlash — Bepul
+    </a>
+</div>
+
+{% endblock %}
