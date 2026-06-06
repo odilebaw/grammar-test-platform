@@ -86,17 +86,8 @@ def dashboard():
 @login_required
 @student_required
 def all_results():
-    """O'quvchining barcha test natijalari."""
-    results = TestResult.query\
-        .filter_by(user_id=current_user.id)\
-        .order_by(TestResult.completed_at.desc())\
-        .all()
-
-    return render_template(
-        'student/results.html',
-        results=results,
-        now=datetime.utcnow(),
-    )
+    """O'quvchining barcha test natijalari — tarix sahifasiga yo'naltirish."""
+    return redirect(url_for('stats.my_history'))
 
 
 @student_bp.route('/test/<int:topic_id>')

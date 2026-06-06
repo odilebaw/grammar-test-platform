@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Mavzular boshqaruvi — Admin | Grammatika Test{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    body { background-color: #f0f4ff; }
+    .page-header {
+        background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+        border-radius: .75rem;
+    }
+    .section-title {
+        color: #0d6efd;
+        border-bottom: 3px solid #0d6efd;
+        padding-bottom: .35rem;
+        margin-bottom: 1.2rem;
+        font-weight: 700;
+    }
+    .topic-card {
+        border: 1px solid #e2e8f0;
+        border-radius: .65rem;
+        background: #fff;
+        transition: box-shadow .18s, border-color .18s;
+    }
+    .topic-card:hover {
+        box-shadow: 0 4px 16px rgba(13,110,253,.1);
+        border-color: #93c5fd;
+    }
+    .badge-boshlangich { background-color: #198754 !important; }
+    .badge-orta        { background-color: #fd7e14 !important; }
+    .badge-yuqori      { background-color: #dc3545 !important; }
+    .add-form-card {
+        border: 2px dashed #93c5fd;
+        border-radius: .75rem;
+        background: #eff6ff;
+    }
+    .add-form-card:focus-within {
+        border-color: #0d6efd;
+        background: #fff;
+    }
+    .modal-confirm .modal-header { background: #fef2f2; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Sarlavha ─────────────────────────────────────────────────────── #}
+<div class="page-header text-white p-4 mb-4 shadow">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h3 class="mb-1">
+                <i class="bi bi-journal-text me-2"></i>Grammatika mavzulari
+            </h3>
+            <p class="mb-0 opacity-75">
+                Jami <strong>{{ topics|length }}</strong> ta mavzu •
+                Faol: <strong>{{ topics|selectattr('is_active')|list|length }}</strong> ta
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Admin paneli
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    {# ── Yangi mavzu qo'shish ─────────────────────────────────────── #}
+    <div class="col-lg-4">
+        <div class="add-form-card p-4">
+            <h5 class="section-title">
+                <i class="bi bi-plus-circle me-2"></i>Yangi mavzu qo'shish
+            </h5>
+            <form method="POST" action="{{ url_for('admin.add_topic') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Mavzu nomi <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="title"
+                           placeholder="Masalan: Present Perfect" required maxlength="200">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Daraja <span class="text-danger">*</span></label>
+                    <select class="form-select" name="difficulty_level" required>
+                        <option value="boshlangich">🟢 Boshlang'ich</option>
+                        <option value="orta">🟠 O'rta</option>
+                        <option value="yuqori">🔴 Yuqori</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold small">Tavsif (ixtiyoriy)</label>
+                    <textarea class="form-control" name="description" rows="3"
+                              placeholder="Mavzu haqida qisqacha ma'lumot..."
+                              maxlength="500"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                    <i class="bi bi-plus-lg me-2"></i>Mavzu qo'shish
+                </button>
+            </form>
+        </div>
+
+        {# ── Qisqacha statistika ───────────────────────────────────── #}
+        <div class="card border-0 shadow-sm rounded-3 mt-4">
+            <div class="card-body p-4">
+                <h6 class="section-title">
+                    <i class="bi bi-bar-chart me-2"></i>Daraja bo'yicha
+                </h6>
+                {% set bosh = topics|selectattr('difficulty_level','eq','boshlangich')|list|length %}
+                {% set orta = topics|selectattr('difficulty_level','eq','orta')|list|length %}
+                {% set yuq  = topics|selectattr('difficulty_level','eq','yuqori')|list|length %}
+                {% for label, count, color in [
+                    ("Boshlang'ich", bosh, 'success'),
+                    ("O'rta",        orta, 'warning'),
+                    ("Yuqori",       yuq,  'danger')
+                ] %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-semibold">{{ label }}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="width:80px;height:8px;">
+                            <div class="progress-bar bg-{{ color }}"
+                                 style="width:{{ (count / topics|length * 100) if topics|length > 0 else 0 }}%">
+                            </div>
+                        </div>
+                        <span class="badge bg-{{ color }} rounded-pill">{{ count }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Mavzular jadvali ─────────────────────────────────────────── #}
+    <div class="col-lg-8">
+        <h5 class="section-title">
+            <i class="bi bi-list-ul me-2"></i>Mavjud mavzular
+        </h5>
+
+        {% if topics %}
+        <div class="d-flex flex-column gap-3">
+            {% for topic in topics %}
+            {% set q_count = topic.questions.filter_by(is_active=True).count() %}
+            <div class="topic-card p-3 {% if not topic.is_active %}opacity-60{% endif %}">
+                <div class="row align-items-center g-2">
+
+                    {# Info #}
+                    <div class="col">
+                        <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+                            <span class="fw-semibold">{{ topic.title }}</span>
+                            <span class="badge badge-{{ topic.difficulty_level }} rounded-pill">
+                                {% if topic.difficulty_level == 'boshlangich' %}Boshlang'ich
+                                {% elif topic.difficulty_level == 'orta' %}O'rta
+                                {% else %}Yuqori{% endif %}
+                            </span>
+                            {% if not topic.is_active %}
+                            <span class="badge bg-secondary rounded-pill">Nofaol</span>
+                            {% endif %}
+                        </div>
+                        {% if topic.description %}
+                        <p class="text-muted small mb-1">{{ topic.description|truncate(90) }}</p>
+                        {% endif %}
+                        <div class="d-flex gap-3 small text-muted">
+                            <span>
+                                <i class="bi bi-question-circle me-1 text-primary"></i>
+                                {{ q_count }} ta savol
+                            </span>
+                            <span>
+                                <i class="bi bi-calendar3 me-1"></i>
+                                {{ topic.created_at.strftime('%d.%m.%Y') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {# Amallar #}
+                    <div class="col-auto d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('admin.questions') }}?topic_id={{ topic.id }}"
+                           class="btn btn-outline-primary btn-sm"
+                           title="Savollarni ko'rish">
+                            <i class="bi bi-eye me-1"></i>
+                            <span class="d-none d-md-inline">Savollar</span>
+                        </a>
+
+                        {# Faollashtirish / O'chirish #}
+                        <form method="POST"
+                              action="{{ url_for('admin.toggle_topic', topic_id=topic.id) }}"
+                              class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit"
+                                    class="btn btn-sm {% if topic.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                                    title="{% if topic.is_active %}O'chirish{% else %}Faollashtirish{% endif %}">
+                                <i class="bi {% if topic.is_active %}bi-pause-circle{% else %}bi-play-circle{% endif %}"></i>
+                            </button>
+                        </form>
+
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                title="O'chirish"
+                                {% if q_count > 0 %}disabled title="Avval savollarni o'chiring"{% endif %}
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteTopicModal"
+                                data-t-id="{{ topic.id }}"
+                                data-t-title="{{ topic.title|e }}">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-journal-x display-1 d-block mb-3"></i>
+            <h5 class="fw-bold">Hali mavzular qo'shilmagan</h5>
+            <p>Chap tomondagi forma orqali yangi mavzu qo'shing.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── O'chirish modali ─────────────────────────────────────────────── #}
+<div class="modal fade modal-confirm" id="deleteTopicModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger" style="border-radius:.75rem;">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Mavzuni o'chirish
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>"<strong id="deleteTopicTitle"></strong>" mavzusini o'chirishni tasdiqlaysizmi?</p>
+                <p class="text-danger small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Bu amal qaytarib bo'lmaydi.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Bekor qilish
+                </button>
+                <form id="deleteTopicForm" method="POST" action="" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash3 me-1"></i>O'chirish
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const deleteTopicModal = document.getElementById('deleteTopicModal');
+if (deleteTopicModal) {
+    deleteTopicModal.addEventListener('show.bs.modal', (event) => {
+        const btn   = event.relatedTarget;
+        const tId   = btn.getAttribute('data-t-id');
+        const title = btn.getAttribute('data-t-title');
+        document.getElementById('deleteTopicForm').action = `/admin/topics/${tId}/delete`;
+        document.getElementById('deleteTopicTitle').textContent = title;
+    });
+}
+</script>
+{% endblock %}

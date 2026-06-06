@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block title %}Savollar banki — Admin | Grammatika Test{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    body { background-color: #f0f4ff; }
+
+    .page-header {
+        background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+        border-radius: .75rem;
+    }
+    .section-title {
+        color: #0d6efd;
+        border-bottom: 3px solid #0d6efd;
+        padding-bottom: .35rem;
+        margin-bottom: 1.2rem;
+        font-weight: 700;
+    }
+
+    /* ── Filter bar ──────────────────────────────────────────── */
+    .filter-card {
+        border: none;
+        border-radius: .65rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    }
+
+    /* ── Question cards ──────────────────────────────────────── */
+    .q-card {
+        border: 1px solid #e2e8f0;
+        border-radius: .65rem;
+        background: #fff;
+        transition: box-shadow .18s, border-color .18s;
+    }
+    .q-card:hover {
+        box-shadow: 0 4px 16px rgba(13,110,253,.1);
+        border-color: #93c5fd;
+    }
+    .q-number {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: #0d6efd; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: .85rem; flex-shrink: 0;
+    }
+    .q-text {
+        font-size: 1rem;
+        font-weight: 500;
+        line-height: 1.5;
+        color: #1e293b;
+    }
+    .option-chip {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: #f1f5f9; border-radius: 6px;
+        padding: 3px 10px; font-size: .78rem;
+        border: 1px solid #e2e8f0;
+    }
+    .option-chip.correct {
+        background: #dcfce7; border-color: #86efac; color: #166534; font-weight: 600;
+    }
+    .explanation-chip {
+        background: #eff6ff; border-left: 3px solid #3b82f6;
+        border-radius: 0 .4rem .4rem 0;
+        padding: .45rem .75rem;
+        font-size: .82rem; color: #1d4ed8;
+    }
+
+    /* ── Level badges ────────────────────────────────────────── */
+    .badge-boshlangich { background-color: #198754 !important; }
+    .badge-orta        { background-color: #fd7e14 !important; }
+    .badge-yuqori      { background-color: #dc3545 !important; }
+
+    /* ── Active / inactive ───────────────────────────────────── */
+    .q-card.inactive { opacity: .6; }
+
+    /* ── Pagination ──────────────────────────────────────────── */
+    .page-link { color: #0d6efd; }
+    .page-item.active .page-link {
+        background-color: #0d6efd; border-color: #0d6efd;
+    }
+
+    /* ── Sort active ─────────────────────────────────────────── */
+    .sort-btn.active {
+        background: #0d6efd !important;
+        color: #fff !important;
+        border-color: #0d6efd !important;
+    }
+
+    /* ── Confirm modal ───────────────────────────────────────── */
+    .modal-confirm .modal-header { background: #fef2f2; border-bottom: 1px solid #fecaca; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Sahifa sarlavhasi ─────────────────────────────────────────────── #}
+<div class="page-header text-white p-4 mb-4 shadow">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h3 class="mb-1">
+                <i class="bi bi-patch-question-fill me-2"></i>Savollar banki
+            </h3>
+            <p class="mb-0 opacity-75">
+                Jami <strong>{{ total_questions }}</strong> ta savol •
+                Ko'rsatilmoqda: <strong>{{ questions|length }}</strong> ta
+                {% if selected_topic %}(filtr qo'llanilgan){% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end flex-wrap">
+            <a href="{{ url_for('ai.generator_page') }}" class="btn btn-light btn-sm fw-semibold">
+                <i class="bi bi-robot me-1"></i>AI Generator
+            </a>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Orqaga
+            </a>
+        </div>
+    </div>
+</div>
+
+{# ── Filtr + Qidiruv ───────────────────────────────────────────────── #}
+<div class="card filter-card mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            {# Mavzu filtr #}
+            <div class="col-sm-5 col-md-4">
+                <label class="form-label small text-muted mb-1">
+                    <i class="bi bi-journal-text me-1"></i>Mavzu bo'yicha filtr
+                </label>
+                <select class="form-select form-select-sm" name="topic_id" onchange="this.form.submit()">
+                    <option value="">— Barcha mavzular —</option>
+                    {% for t in topics %}
+                    <option value="{{ t.id }}"
+                        {% if selected_topic == t.id %}selected{% endif %}>
+                        {{ t.title }}
+                        ({{ t.questions.filter_by(is_active=True).count() }} ta)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Qidiruv #}
+            <div class="col-sm-5 col-md-4">
+                <label class="form-label small text-muted mb-1">
+                    <i class="bi bi-search me-1"></i>Matn bo'yicha qidirish
+                </label>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" name="q"
+                           value="{{ search or '' }}"
+                           placeholder="Savol matnini kiriting...">
+                    {% if search %}
+                    <a href="?{% if selected_topic %}topic_id={{ selected_topic }}{% endif %}"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-x"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Saralash #}
+            <div class="col-sm-2 col-md-2">
+                <label class="form-label small text-muted mb-1">Saralash</label>
+                <select class="form-select form-select-sm" name="sort" onchange="this.form.submit()">
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Yangi</option>
+                    <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Eski</option>
+                    <option value="topic"  {% if sort == 'topic'  %}selected{% endif %}>Mavzu</option>
+                </select>
+            </div>
+
+            <div class="col-sm-12 col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-funnel me-1"></i>Filtrlash
+                </button>
+            </div>
+        </form>
+
+        {# Mavzu filtri tugmalari (tezkor) #}
+        {% if topics %}
+        <div class="d-flex flex-wrap gap-1 mt-3 pt-2 border-top">
+            <a href="?{% if search %}q={{ search }}{% endif %}"
+               class="btn btn-sm {% if not selected_topic %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill">
+                Barchasi
+                <span class="badge bg-white text-primary ms-1">{{ total_questions }}</span>
+            </a>
+            {% for t in topics %}
+            {% set tc = t.questions.filter_by(is_active=True).count() %}
+            {% if tc > 0 %}
+            <a href="?topic_id={{ t.id }}{% if search %}&q={{ search }}{% endif %}"
+               class="btn btn-sm {% if selected_topic == t.id %}btn-primary{% else %}btn-outline-primary{% endif %} rounded-pill">
+                {{ t.title }}
+                <span class="badge {% if selected_topic == t.id %}bg-white text-primary{% else %}bg-primary{% endif %} ms-1">
+                    {{ tc }}
+                </span>
+            </a>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Savollar ro'yxati ─────────────────────────────────────────────── #}
+{% if page_questions %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h5 class="section-title mb-0">
+        <i class="bi bi-list-ul me-2"></i>Savollar
+        <span class="text-muted fw-normal fs-6 ms-1">
+            ({{ (current_page - 1) * per_page + 1 }}–{{ [current_page * per_page, questions|length]|min }}
+            / {{ questions|length }})
+        </span>
+    </h5>
+    <span class="text-muted small">
+        Sahifa {{ current_page }} / {{ total_pages }}
+    </span>
+</div>
+
+<div class="d-flex flex-column gap-3 mb-4">
+{% for q in page_questions %}
+<div class="q-card p-3 {% if not q.is_active %}inactive{% endif %}"
+     id="question-{{ q.id }}">
+    <div class="d-flex align-items-start gap-3">
+
+        {# Raqam #}
+        <div class="q-number flex-shrink-0">
+            {{ (current_page - 1) * per_page + loop.index }}
+        </div>
+
+        <div class="flex-grow-1 min-width-0">
+
+            {# Mavzu + Daraja + Holat #}
+            <div class="d-flex flex-wrap gap-1 mb-2 align-items-center">
+                <span class="badge rounded-pill bg-primary">
+                    <i class="bi bi-journal-text me-1"></i>{{ q.topic.title }}
+                </span>
+                <span class="badge rounded-pill badge-{{ q.topic.difficulty_level }}">
+                    {% if q.topic.difficulty_level == 'boshlangich' %}Boshlang'ich
+                    {% elif q.topic.difficulty_level == 'orta' %}O'rta
+                    {% else %}Yuqori{% endif %}
+                </span>
+                {% if q.is_active %}
+                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                    <i class="bi bi-check-circle me-1"></i>Faol
+                </span>
+                {% else %}
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary border">
+                    <i class="bi bi-dash-circle me-1"></i>Nofaol
+                </span>
+                {% endif %}
+                <span class="ms-auto text-muted small">
+                    ID: #{{ q.id }} · {{ q.created_at.strftime('%d.%m.%Y') }}
+                </span>
+            </div>
+
+            {# Savol matni #}
+            <p class="q-text mb-3">{{ q.question_text }}</p>
+
+            {# Variantlar #}
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                {% for letter, text in [('A', q.option_a), ('B', q.option_b),
+                                         ('C', q.option_c), ('D', q.option_d)] %}
+                <span class="option-chip {% if q.correct_option == letter %}correct{% endif %}">
+                    {% if q.correct_option == letter %}
+                        <i class="bi bi-check-circle-fill"></i>
+                    {% else %}
+                        <i class="bi bi-circle text-muted"></i>
+                    {% endif %}
+                    <strong>{{ letter }}.</strong> {{ text|truncate(40) }}
+                </span>
+                {% endfor %}
+            </div>
+
+            {# Tushuntirish #}
+            {% if q.explanation %}
+            <div class="explanation-chip mt-2">
+                <i class="bi bi-lightbulb-fill me-1"></i>
+                <strong>Tushuntirish:</strong> {{ q.explanation|truncate(120) }}
+            </div>
+            {% endif %}
+
+        </div>
+
+        {# O'chirish tugmasi #}
+        <div class="flex-shrink-0">
+            <button type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    title="O'chirish"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteModal"
+                    data-q-id="{{ q.id }}"
+                    data-q-text="{{ q.question_text|truncate(60)|e }}">
+                <i class="bi bi-trash3"></i>
+            </button>
+        </div>
+
+    </div>
+</div>
+{% endfor %}
+</div>
+
+{# ── Sahifalash (Pagination) ───────────────────────────────────────── #}
+{% if total_pages > 1 %}
+<nav aria-label="Sahifalash" class="mb-5">
+    <ul class="pagination justify-content-center flex-wrap gap-1">
+
+        {# Birinchi + Orqaga #}
+        <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+            <a class="page-link rounded" href="?page=1{{ filter_qs }}"
+               aria-label="Birinchi">
+                <i class="bi bi-chevron-double-left"></i>
+            </a>
+        </li>
+        <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+            <a class="page-link rounded" href="?page={{ current_page - 1 }}{{ filter_qs }}"
+               aria-label="Oldingi">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+
+        {# Sahifa raqamlari (oyna: max 7 ko'rsatiladi) #}
+        {% set win_start = [1, current_page - 3]|max %}
+        {% set win_end   = [total_pages, current_page + 3]|min %}
+        {% if win_start > 1 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+        {% for p in range(win_start, win_end + 1) %}
+        <li class="page-item {% if p == current_page %}active{% endif %}">
+            <a class="page-link rounded" href="?page={{ p }}{{ filter_qs }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        {% if win_end < total_pages %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+
+        {# Keyingi + Oxirgi #}
+        <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+            <a class="page-link rounded" href="?page={{ current_page + 1 }}{{ filter_qs }}"
+               aria-label="Keyingi">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+            <a class="page-link rounded" href="?page={{ total_pages }}{{ filter_qs }}"
+               aria-label="Oxirgi">
+                <i class="bi bi-chevron-double-right"></i>
+            </a>
+        </li>
+    </ul>
+    <p class="text-center text-muted small">
+        Jami {{ questions|length }} ta savoldan {{ per_page }} tasi ko'rsatilmoqda
+    </p>
+</nav>
+{% endif %}
+
+{% else %}
+{# ── Bo'sh holat ──────────────────────────────────────────────────── #}
+<div class="text-center py-5">
+    <i class="bi bi-patch-question display-1 text-muted d-block mb-3"></i>
+    <h5 class="fw-bold text-muted">
+        {% if selected_topic or search %}
+            Filtr bo'yicha savollar topilmadi
+        {% else %}
+            Hali hech qanday savol qo'shilmagan
+        {% endif %}
+    </h5>
+    <p class="text-muted mb-4">
+        {% if selected_topic or search %}
+            Boshqa filtr parametrlarini sinab ko'ring.
+        {% else %}
+            AI Generator yordamida avtomatik savollar yarating.
+        {% endif %}
+    </p>
+    <div class="d-flex gap-2 justify-content-center flex-wrap">
+        {% if selected_topic or search %}
+        <a href="{{ url_for('admin.questions') }}" class="btn btn-outline-primary">
+            <i class="bi bi-x me-1"></i>Filtrni tozalash
+        </a>
+        {% endif %}
+        <a href="{{ url_for('ai.generator_page') }}" class="btn btn-primary">
+            <i class="bi bi-robot me-1"></i>AI bilan yaratish
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{# ══════════════════════════════════════════════════════════════════════
+   O'chirish tasdiqlash modali
+══════════════════════════════════════════════════════════════════════ #}
+<div class="modal fade modal-confirm" id="deleteModal" tabindex="-1"
+     aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger" style="border-radius:.75rem;">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger fw-bold" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>O'chirishni tasdiqlang
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Quyidagi savolni o'chirishni xohlaysizmi?</p>
+                <div class="bg-light rounded p-3 border">
+                    <p class="mb-0 fw-semibold" id="deleteQuestionText" style="font-size:.95rem;"></p>
+                </div>
+                <p class="text-danger small mt-3 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Bu amal qaytarib bo'lmaydi. Savol butunlay o'chiriladi.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    <i class="bi bi-x me-1"></i>Bekor qilish
+                </button>
+                <form id="deleteForm" method="POST" action="" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash3 me-1"></i>Ha, o'chirish
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── O'chirish modaliga savol ID va matnini uzatish ─────────────────────
+const deleteModal = document.getElementById('deleteModal');
+if (deleteModal) {
+    deleteModal.addEventListener('show.bs.modal', (event) => {
+        const btn       = event.relatedTarget;
+        const qId       = btn.getAttribute('data-q-id');
+        const qText     = btn.getAttribute('data-q-text');
+        const form      = document.getElementById('deleteForm');
+        const textEl    = document.getElementById('deleteQuestionText');
+
+        form.action  = `/admin/questions/${qId}/delete`;
+        textEl.textContent = qText;
+    });
+}
+</script>
+{% endblock %}

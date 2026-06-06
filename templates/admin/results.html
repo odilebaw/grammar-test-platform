@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Barcha natijalar — Admin | Grammatika Test{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    body { background-color: #f0f4ff; }
+    .page-header {
+        background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+        border-radius: .75rem;
+    }
+    .section-title {
+        color: #0d6efd;
+        border-bottom: 3px solid #0d6efd;
+        padding-bottom: .35rem;
+        margin-bottom: 1.2rem;
+        font-weight: 700;
+    }
+    .results-table thead { background: #0d6efd; color: #fff; }
+    .results-table tbody tr:hover { background: #f0f4ff; }
+    .results-table th, .results-table td { vertical-align: middle; }
+    .filter-card { border: none; border-radius: .65rem; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+    @media print {
+        .no-print { display: none !important; }
+        body { background: #fff !important; }
+        .results-table thead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Sarlavha ─────────────────────────────────────────────────────── #}
+<div class="page-header text-white p-4 mb-4 shadow">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h3 class="mb-1">
+                <i class="bi bi-clipboard2-data-fill me-2"></i>Barcha test natijalari
+            </h3>
+            <p class="mb-0 opacity-75">
+                Jami <strong>{{ results|length }}</strong> ta natija
+                {% if selected_topic %}(filtr qo'llanilgan){% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end no-print flex-wrap">
+            <button onclick="window.print()" class="btn btn-light btn-sm">
+                <i class="bi bi-printer me-1"></i>Chop etish
+            </button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Orqaga
+            </a>
+        </div>
+    </div>
+</div>
+
+{# ── Umumiy statistika ─────────────────────────────────────────────── #}
+{% if results %}
+{% set scores = results|map(attribute='score_percentage')|list %}
+{% set avg = (scores|sum / scores|length)|round(1) if scores else 0 %}
+{% set pass_count = scores|select('ge', 60)|list|length %}
+<div class="row g-3 mb-4 no-print">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <div class="fs-3 fw-bold text-primary">{{ results|length }}</div>
+            <div class="small text-muted">Jami testlar</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <div class="fs-3 fw-bold text-warning">{{ avg }}%</div>
+            <div class="small text-muted">O'rtacha ball</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <div class="fs-3 fw-bold text-success">{{ pass_count }}</div>
+            <div class="small text-muted">O'tdi (≥60%)</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <div class="fs-3 fw-bold text-danger">{{ results|length - pass_count }}</div>
+            <div class="small text-muted">O'tmadi (&lt;60%)</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ── Filtr ─────────────────────────────────────────────────────────── #}
+<div class="card filter-card mb-4 no-print">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-sm-5 col-md-4">
+                <label class="form-label small text-muted mb-1">Mavzu bo'yicha filtr</label>
+                <select class="form-select form-select-sm" name="topic_id" onchange="this.form.submit()">
+                    <option value="">— Barcha mavzular —</option>
+                    {% for t in topics %}
+                    <option value="{{ t.id }}" {% if selected_topic == t.id %}selected{% endif %}>
+                        {{ t.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-4 col-md-3">
+                <label class="form-label small text-muted mb-1">Saralash</label>
+                <select class="form-select form-select-sm" name="sort" onchange="this.form.submit()">
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Yangi → Eski</option>
+                    <option value="score_high" {% if sort == 'score_high' %}selected{% endif %}>Yuqori ball</option>
+                    <option value="score_low"  {% if sort == 'score_low'  %}selected{% endif %}>Past ball</option>
+                </select>
+            </div>
+            <div class="col-sm-3 col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-funnel me-1"></i>Filtrlash
+                </button>
+            </div>
+            {% if selected_topic %}
+            <div class="col-auto">
+                <a href="{{ url_for('admin.all_results') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x me-1"></i>Tozalash
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{# ── Natijalar jadvali ─────────────────────────────────────────────── #}
+{% if results %}
+<div class="table-responsive shadow-sm rounded-3 mb-5">
+    <table class="table table-hover results-table mb-0">
+        <thead>
+            <tr>
+                <th style="width:40px">#</th>
+                <th>O'quvchi</th>
+                <th>Mavzu</th>
+                <th class="text-center">Ball</th>
+                <th class="text-center">To'g'ri</th>
+                <th class="text-center">Vaqt</th>
+                <th>Sana</th>
+                <th class="no-print"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in results %}
+            {% set sc = r.score_percentage %}
+            <tr>
+                <td class="text-muted small">{{ loop.index }}</td>
+                <td>
+                    <a href="{{ url_for('stats.student_detail', user_id=r.user_id) }}"
+                       class="text-decoration-none fw-semibold">
+                        {{ r.user.username }}
+                    </a>
+                    {% if r.user.first_name %}
+                    <br><small class="text-muted">{{ r.user.first_name }} {{ r.user.last_name or '' }}</small>
+                    {% endif %}
+                </td>
+                <td class="small">{{ r.topic.title }}</td>
+                <td class="text-center">
+                    <span class="badge rounded-pill
+                        {% if sc >= 90 %}bg-success
+                        {% elif sc >= 70 %}bg-primary
+                        {% elif sc >= 50 %}bg-warning text-dark
+                        {% else %}bg-danger{% endif %}
+                        px-2 py-1 fs-6">
+                        {{ "%.0f"|format(sc) }}%
+                    </span>
+                </td>
+                <td class="text-center small">
+                    <span class="text-success fw-semibold">{{ r.correct_answers }}</span>
+                    <span class="text-muted"> / {{ r.total_questions }}</span>
+                </td>
+                <td class="text-center small text-muted">
+                    {% if r.time_taken_seconds %}
+                        {% set m = r.time_taken_seconds // 60 %}
+                        {% set s = r.time_taken_seconds % 60 %}
+                        {{ "%02d:%02d"|format(m, s) }}
+                    {% else %}—{% endif %}
+                </td>
+                <td class="small text-muted text-nowrap">
+                    {{ r.completed_at.strftime('%d.%m.%Y') }}<br>
+                    <span class="text-muted" style="font-size:.75rem;">
+                        {{ r.completed_at.strftime('%H:%M') }}
+                    </span>
+                </td>
+                <td class="no-print">
+                    <a href="{{ url_for('stats.student_detail', user_id=r.user_id) }}"
+                       class="btn btn-outline-primary btn-sm"
+                       title="O'quvchi tarixini ko'rish">
+                        <i class="bi bi-person-lines-fill"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-clipboard2-x display-1 d-block mb-3"></i>
+    <h5 class="fw-bold">
+        {% if selected_topic %}Filtr bo'yicha natijalar topilmadi
+        {% else %}Hali hech qanday test topshirilmagan{% endif %}
+    </h5>
+    {% if selected_topic %}
+    <a href="{{ url_for('admin.all_results') }}" class="btn btn-outline-primary mt-2">
+        <i class="bi bi-x me-1"></i>Filtrni tozalash
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
