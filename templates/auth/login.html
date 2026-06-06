@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Kirish - Grammatika Test{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="card-title text-center mb-4">Tizimga kirish</h2>
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Foydalanuvchi nomi</label>
+                        <input type="text" class="form-control" id="username" name="username"
+                               placeholder="Foydalanuvchi nomingizni kiriting" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Parol</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="Parolingizni kiriting" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">Meni eslab qol</label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Kirish</button>
+                    </div>
+                </form>
+                <hr>
+                <p class="text-center mb-0">
+                    Hisobingiz yo'qmi? <a href="{{ url_for('auth.register') }}">Ro'yxatdan o'ting</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Ro'yxatdan o'tish - Grammatika Test{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="card-title text-center mb-4">Ro'yxatdan o'tish</h2>
+                <form method="POST" action="{{ url_for('auth.register') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Foydalanuvchi nomi</label>
+                        <input type="text" class="form-control" id="username" name="username"
+                               placeholder="Foydalanuvchi nomini kiriting" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Elektron pochta</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               placeholder="Elektron pochtangizni kiriting" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">Ism</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name"
+                               placeholder="Ismingizni kiriting">
+                    </div>
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Familiya</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name"
+                               placeholder="Familiyangizni kiriting">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Parol</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="Parol kiriting" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password_confirm" class="form-label">Parolni tasdiqlash</label>
+                        <input type="password" class="form-control" id="password_confirm" name="password_confirm"
+                               placeholder="Parolni qayta kiriting" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Ro'yxatdan o'tish</button>
+                    </div>
+                </form>
+                <hr>
+                <p class="text-center mb-0">
+                    Hisobingiz bormi? <a href="{{ url_for('auth.login') }}">Tizimga kiring</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

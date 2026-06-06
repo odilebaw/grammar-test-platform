@@ -33,8 +33,15 @@ def create_app(config_name=None):
 
     @login_manager.user_loader
     def load_user(user_id):
-        from models import User
+        from flask import session
+        from models import User, Admin
+        user_type = session.get('user_type')
+        if user_type == 'admin':
+            return Admin.query.get(int(user_id))
         return User.query.get(int(user_id))
+
+    from routes.auth import auth_bp
+    app.register_blueprint(auth_bp)
 
     with app.app_context():
         from models import User, Admin, GrammarTopic, Question, TestResult
