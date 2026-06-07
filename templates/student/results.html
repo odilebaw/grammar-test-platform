@@ -81,6 +81,27 @@
         font-size: .9rem;
     }
 
+    /* ── Student identity strip ────────────────────────────── */
+    .student-identity {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255,255,255,0.18);
+        border: 1.5px solid rgba(255,255,255,0.45);
+        border-radius: 50px;
+        padding: .45rem 1.2rem;
+        margin-top: .75rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: .01em;
+    }
+    .student-identity .student-name  { color: #fff; }
+    .student-identity .student-uname {
+        color: rgba(255,255,255,.75);
+        font-weight: 500;
+        font-size: .9rem;
+    }
+
     /* ── Filter tabs ───────────────────────────────────────── */
     .filter-tab.active {
         background: #0d6efd !important;
@@ -116,7 +137,23 @@
     <h3 class="fw-bold mb-1">
         <i class="bi {{ grade_icon }} me-2"></i>{{ grade_uz }}!
     </h3>
-    <p class="mb-0 opacity-90">{{ topic.title }}</p>
+
+    {# ── O'quvchi ismi ──────────────────────────────────────── #}
+    <div class="student-identity">
+        <i class="bi bi-person-circle" style="font-size:1.2rem;color:rgba(255,255,255,.85);"></i>
+        <span>
+            <span class="student-name">O'quvchi:&nbsp;
+                {%- if current_user.first_name or current_user.last_name -%}
+                    {{ current_user.first_name or '' }}{% if current_user.last_name %} {{ current_user.last_name }}{% endif %}
+                {%- else -%}
+                    {{ current_user.username }}
+                {%- endif -%}
+            </span>
+            <span class="student-uname">&nbsp;({{ current_user.username }})</span>
+        </span>
+    </div>
+
+    <p class="mb-0 opacity-90 mt-2">{{ topic.title }}</p>
 </div>
 
 {# ── Statistika qisqacha ───────────────────────────────────────────── #}
