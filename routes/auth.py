@@ -59,15 +59,12 @@ def register():
         return redirect('/dashboard')
 
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        email = request.form.get('email', '').strip()
-        first_name = request.form.get('first_name', '').strip()
-        last_name = request.form.get('last_name', '').strip()
-        password = request.form.get('password', '')
+        username         = request.form.get('username', '').strip()
+        password         = request.form.get('password', '')
         password_confirm = request.form.get('password_confirm', '')
 
-        if not username or not email or not password:
-            flash("Iltimos, barcha majburiy maydonlarni to'ldiring.", 'danger')
+        if not username or not password:
+            flash("Iltimos, barcha maydonlarni to'ldiring.", 'danger')
             return render_template('auth/register.html')
 
         if password != password_confirm:
@@ -82,16 +79,7 @@ def register():
             flash("Bu foydalanuvchi nomi allaqachon mavjud.", 'danger')
             return render_template('auth/register.html')
 
-        if User.query.filter_by(email=email).first():
-            flash("Bu elektron pochta allaqachon ro'yxatdan o'tgan.", 'danger')
-            return render_template('auth/register.html')
-
-        user = User(
-            username=username,
-            email=email,
-            first_name=first_name or None,
-            last_name=last_name or None
-        )
+        user = User(username=username)
         user.set_password(password)
 
         db.session.add(user)
